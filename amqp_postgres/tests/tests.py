@@ -49,7 +49,8 @@ class Test(unittest.TestCase):
                 amqp_hostname='localhost',
                 amqp_username='guest',
                 amqp_password='guest',
-                amqp_ssl_enabled=False,
+                # Expected to be a string, because usually from the shell
+                amqp_ssl_enabled='false',
                 amqp_ca_cert_path='',
                 postgres_hostname='localhost',
                 postgres_db='cloudify',
