@@ -63,5 +63,6 @@ workflows:
 
   build_and_test:
     jobs:
-      - test
+      - flake8
+      - py27
 #      - build-rpm
