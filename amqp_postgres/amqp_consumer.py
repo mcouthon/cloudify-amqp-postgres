@@ -27,7 +27,7 @@ class AMQPLogsEventsConsumer(object):
     EVENTS_EXCHANGE = 'cloudify-events'
 
     def __init__(self, message_processor):
-        self.queue = uuid4()
+        self.queue = str(uuid4())
         self._connection = None
         self._in_channel = None
         self._message_processor = message_processor
