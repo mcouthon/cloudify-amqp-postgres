@@ -19,7 +19,7 @@ import logging
 from uuid import uuid4
 
 logging.basicConfig()
-logger = logging.getLogger('amqp_postgres')
+logger = logging.getLogger('amqp_postgres.consumer')
 
 
 class AMQPLogsEventsConsumer(object):

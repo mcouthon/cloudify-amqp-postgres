@@ -19,7 +19,7 @@ import logging
 import psycopg2
 
 logging.basicConfig()
-logger = logging.getLogger('amqp_postgres')
+logger = logging.getLogger('amqp_postgres.publisher')
 
 
 class PostgreSQLPublisher(object):
