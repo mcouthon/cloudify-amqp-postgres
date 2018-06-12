@@ -19,6 +19,7 @@ import time
 import unittest
 import threading
 from uuid import uuid4
+from datetime import datetime
 
 from collections import namedtuple
 
@@ -130,6 +131,10 @@ class Test(unittest.TestCase):
             res = cur.fetchall()
             print res, type(res), cur.statusmessage
 
+    @staticmethod
+    def now():
+        return '{0}Z'.format(datetime.utcnow().isoformat()[:-3])
+
     def _publish_log(self, execution_id):
         log = {
             'context': {
@@ -150,7 +155,8 @@ class Test(unittest.TestCase):
             'logger': 'ctx.a13973d5-3866-4054-baa1-479e242fff75',
             'message': {
                 'text': 'Test log'
-            }
+            },
+            'timestamp': self.now()
         }
 
         self.events_publisher.publish_message(log, message_type='log')
@@ -167,7 +173,8 @@ class Test(unittest.TestCase):
                 'workflow_id': 'install',
                 'execution_id': execution_id,
                 'blueprint_id': 'bp'
-            }
+            },
+            'timestamp': self.now()
         }
 
         self.events_publisher.publish_message(event, message_type='event')
