@@ -145,7 +145,7 @@ class Test(unittest.TestCase):
     def _publish_event(self):
         event = {
             "message": {
-                "text": "Starting 'create_deployment_environment' workflow execution",
+                "text": "Starting 'install' workflow execution",
                 "arguments": None
             },
             "event_type": "workflow_started",
