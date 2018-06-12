@@ -2,10 +2,12 @@ version: 2
 
 defaults:
   - &run_test
-    run: |
-      sudo pip install -U pip==9.0.1
-      sudo pip install tox
-      tox -e ${TOX_TEST}
+    run:
+      name: Install tox and run test
+      command: |
+        sudo pip install -U pip==9.0.1
+        sudo pip install tox
+        tox -e ${TOX_TEST}
 
 jobs:
   flake8:
@@ -32,54 +34,60 @@ jobs:
       - checkout
       - run: sudo apt-get update
       - run: sudo apt-get install postgresql-client
-      - run: |
-          psql -d ${TEST_DATABASE_URL} \
-          -c "CREATE TABLE executions (
-             id text,
-             _storage_id integer,
-             _tenant_id integer,
-             _creator_id integer
-          );"
+      - run:
+          name: Create executions table
+          command: |
+            psql -d ${TEST_DATABASE_URL} \
+            -c "CREATE TABLE executions (
+               id text,
+               _storage_id integer,
+               _tenant_id integer,
+               _creator_id integer
+            );"
 
-      - run: |
-          psql -d ${TEST_DATABASE_URL} \
-          -c "CREATE TABLE events (
-              _storage_id integer NOT NULL,
-              id text,
-              \"timestamp\" timestamp NOT NULL,
-              message text,
-              message_code text,
-              event_type text,
-              operation text,
-              node_id text,
-              _execution_fk integer NOT NULL,
-              _creator_id integer NOT NULL,
-              _tenant_id integer NOT NULL,
-              reported_timestamp timestamp NOT NULL,
-              error_causes text,
-              private_resource boolean,
-              visibility text
-          );"
-
-      - run: |
-          psql -d ${TEST_DATABASE_URL} \
-          -c "CREATE TABLE logs (
+      - run:
+          name: Create events table
+          command: |
+            psql -d ${TEST_DATABASE_URL} \
+            -c "CREATE TABLE events (
                 _storage_id integer NOT NULL,
                 id text,
                 \"timestamp\" timestamp NOT NULL,
                 message text,
                 message_code text,
-                logger text,
-                level text,
+                event_type text,
                 operation text,
                 node_id text,
                 _execution_fk integer NOT NULL,
                 _creator_id integer NOT NULL,
                 _tenant_id integer NOT NULL,
                 reported_timestamp timestamp NOT NULL,
+                error_causes text,
                 private_resource boolean,
                 visibility text
             );"
+
+      - run:
+          name: Create logs table
+          command: |
+            psql -d ${TEST_DATABASE_URL} \
+            -c "CREATE TABLE logs (
+                  _storage_id integer NOT NULL,
+                  id text,
+                  \"timestamp\" timestamp NOT NULL,
+                  message text,
+                  message_code text,
+                  logger text,
+                  level text,
+                  operation text,
+                  node_id text,
+                  _execution_fk integer NOT NULL,
+                  _creator_id integer NOT NULL,
+                  _tenant_id integer NOT NULL,
+                  reported_timestamp timestamp NOT NULL,
+                  private_resource boolean,
+                  visibility text
+              );"
       - *run_test
     environment:
       TOX_TEST: py27

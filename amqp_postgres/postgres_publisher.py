@@ -29,7 +29,6 @@ class PostgreSQLPublisher(object):
         self._user = user
         self._password = password
         self._connection = None
-        self._cursor = None
 
     def __enter__(self):
         self._connect()
@@ -39,9 +38,6 @@ class PostgreSQLPublisher(object):
         self._close()
 
     def _close(self):
-        if self._cursor is not None:
-            self._cursor.close()
-
         if self._connection is not None:
             self._connection.close()
 
@@ -52,8 +48,8 @@ class PostgreSQLPublisher(object):
             host=self._host,
             password=self._password
         )
-        self._cursor = self._connection.cursor()
 
     def process(self, message):
-        logger.error('#' * 80)
-        logger.error(message)
+        with self._connection.cursor() as cur:
+            logger.error('#' * 80)
+            logger.error(message)
