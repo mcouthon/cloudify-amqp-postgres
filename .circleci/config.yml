@@ -1,19 +1,19 @@
 version: 2
 
 defaults:
-  - &checkout_and_run
-    - checkout
-    - run: |
-        sudo pip install -U pip==9.0.1
-        sudo pip install tox
-        tox -e ${TOX_TEST}
+  - &run_test
+    run: |
+      sudo pip install -U pip==9.0.1
+      sudo pip install tox
+      tox -e ${TOX_TEST}
 
 jobs:
   flake8:
     docker:
       - image: circleci/python:2.7.14
     steps:
-      <<: *checkout_and_run
+      - checkout
+      - *run_test
     environment:
       TOX_TEST: flake8
 
@@ -29,6 +29,7 @@ jobs:
           POSTGRES_PASSWORD: cloudify
           POSTGRES_DB: cloudify_db
     steps:
+      - checkout
       - run: sudo apt-get update
       - run: sudo apt-get install postgresql-client-9.6
       - run: |
@@ -61,25 +62,25 @@ jobs:
           );"
 
       - run: |
-        psql -d ${TEST_DATABASE_URL} \
-        -c "CREATE TABLE logs (
-              _storage_id integer NOT NULL,
-              id text,
-              \"timestamp\" timestamp NOT NULL,
-              message text,
-              message_code text,
-              logger text,
-              level text,
-              operation text,
-              node_id text,
-              _execution_fk integer NOT NULL,
-              _creator_id integer NOT NULL,
-              _tenant_id integer NOT NULL,
-              reported_timestamp timestamp NOT NULL,
-              private_resource boolean,
-              visibility text
-          );"
-      <<: *checkout_and_run
+          psql -d ${TEST_DATABASE_URL} \
+          -c "CREATE TABLE logs (
+                _storage_id integer NOT NULL,
+                id text,
+                \"timestamp\" timestamp NOT NULL,
+                message text,
+                message_code text,
+                logger text,
+                level text,
+                operation text,
+                node_id text,
+                _execution_fk integer NOT NULL,
+                _creator_id integer NOT NULL,
+                _tenant_id integer NOT NULL,
+                reported_timestamp timestamp NOT NULL,
+                private_resource boolean,
+                visibility text
+            );"
+      - *run_test
     environment:
       TOX_TEST: py27
 
