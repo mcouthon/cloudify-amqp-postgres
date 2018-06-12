@@ -57,9 +57,9 @@ class AMQPLogsEventsConsumer(object):
         channel.basic_consume(self.process, self.queue)
 
     def process(self, channel, method, properties, body):
-        logger.info('Channel: {0}'.format(channel))
-        logger.info('Method: {0}'.format(method))
-        logger.info('Properties: {0}'.format(properties))
+        print('Channel: {0}'.format(channel))
+        print('Method: {0}'.format(method))
+        print('Properties: {0}'.format(properties))
         try:
             parsed_body = json.loads(body)
             self._message_processor(parsed_body)
