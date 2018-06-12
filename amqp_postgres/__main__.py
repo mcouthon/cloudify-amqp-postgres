@@ -36,8 +36,6 @@ def parse_args():
     parser.add_argument('--amqp-ssl-enabled', required=False)
     parser.add_argument('--amqp-ca-cert-path', required=False,
                         default='')
-    parser.add_argument('--amqp-exchange', required=True)
-    parser.add_argument('--amqp-routing-key', required=True)
     parser.add_argument('--postgres-hostname', required=False,
                         default='localhost')
     parser.add_argument('--postgres-db', required=True)
@@ -46,9 +44,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
-    args = parse_args()
-
+def main(args):
     postgres_publisher = PostgreSQLPublisher(
         host=args.postgres_hostname,
         db=args.postgres_db,
@@ -85,4 +81,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(parse_args())
