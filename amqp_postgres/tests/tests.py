@@ -108,12 +108,13 @@ class Test(unittest.TestCase):
         self._assert_db_state()
 
     def _create_execution(self, execution_id):
+        sql = (
+            'INSERT into executions('
+            'id, _storage_id, _creator_id, _tenant_id'
+            ') VALUES(%s, 0, 0, 0)'
+        )
         with self._postgres_connection.cursor() as cur:
-            cur.execute(
-                'INSERT into executions('
-                'id, _storage_id, _creator_id, _tenant_id) VALUES(%s)',
-                (execution_id, 0, 0, 0)
-            )
+            cur.execute(sql, (execution_id, ))
 
     def _assert_db_state(self):
         with self._postgres_connection.cursor() as cur:

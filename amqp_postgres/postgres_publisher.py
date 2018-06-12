@@ -51,78 +51,87 @@ class PostgreSQLPublisher(object):
 
     def process(self, message, exchange):
         if exchange == 'cloudify-events':
-            sql = self._get_events_sql(message)
+            sql, args = self._get_events_sql(message)
         elif exchange == 'cloudify-logs':
-            sql = self._get_logs_sql(message)
+            sql, args = self._get_logs_sql(message)
         else:
             raise StandardError('Unknown exchange type: {0}'.format(exchange))
 
         with self._connection.cursor() as cur:
             logger.debug('Executing SQL statement: {0}'.format(sql))
-            cur.execute(sql)
+            cur.execute(sql, args)
 
     @staticmethod
     def _get_logs_sql(message):
-        return "INSERT INTO logs (" \
-                 "timestamp, " \
-                 "reported_timestamp, " \
-                 "_execution_fk, " \
-                 "_tenant_id, " \
-                 " _creator_id, " \
-                 "logger, " \
-                 "level, " \
-                 "message, " \
-                 "message_code, " \
-                 "operation, " \
-                 "node_id) " \
-               "SELECT now(), " \
-                 "_storage_id, " \
-                 "_tenant_id, " \
-                 "_creator_id, " \
-                 "{logger}, " \
-                 "{level}, " \
-                 "{message}, " \
-                 "NULL, " \
-                 "{operation}, " \
-                 "{node_id} " \
-               "FROM executions WHERE id = {execution_id}".format(
-                    logger=message['logger'],
-                    level=message['level'],
-                    message=message['message']['text'],
-                    operation=message['context']['operation'],
-                    node_id=message['context']['node_id'],
-                    execution_id=message['context']['execution_id']
-                )
+        sql = (
+            "INSERT INTO logs ("
+              "timestamp, "
+              "reported_timestamp, "
+              "_execution_fk, "
+              "_tenant_id, "
+              " _creator_id, "
+              "logger, "
+              "level, "
+              "message, "
+              "message_code, "
+              "operation, "
+              "node_id) "
+            "SELECT now(), "
+              "_storage_id, "
+              "_tenant_id, "
+              "_creator_id, "
+              "%s, "
+              "%s, "
+              "%s, "
+              "NULL, "
+              "%s, "
+              "%s "
+            "FROM executions WHERE id = %s"
+        )
+        args = (
+            message['logger'],
+            message['level'],
+            message['message']['text'],
+            message['context']['operation'],
+            message['context']['node_id'],
+            message['context']['execution_id']
+        )
+        return sql, args
 
     @staticmethod
     def _get_events_sql(message):
-        return "INSERT INTO events (" \
-                 "timestamp, " \
-                 "reported_timestamp, " \
-                 "_execution_fk, " \
-                 "_tenant_id, " \
-                 "_creator_id, " \
-                 "event_type, " \
-                 "message, " \
-                 "message_code, " \
-                 "operation, " \
-                 "node_id, " \
-                 "error_causes) " \
-               "SELECT now(), " \
-                 "_storage_id, " \
-                 "_tenant_id, " \
-                 "_creator_id, " \
-                 "{event_type}, " \
-                 "{message}, " \
-                 "NULL, " \
-                 "{operation}, " \
-                 "{node_id}, " \
-                 "{error_causes}, " \
-                 "FROM executions WHERE id = {execution_id}".format(
-                    event_type=message['event_type'],
-                    message=message['message']['text'],
-                    operation=message['context']['operation'],
-                    node_id=message['context']['node_id'],
-                    error_causes=message['context']['task_error_causes'],
-                    execution_id=message['context']['execution_id']
-                 )
+        sql = (
+            "INSERT INTO events ("
+              "timestamp, "
+              "reported_timestamp, "
+              "_execution_fk, "
+              "_tenant_id, "
+              "_creator_id, "
+              "event_type, "
+              "message, "
+              "message_code, "
+              "operation, "
+              "node_id, "
+              "error_causes) "
+            "SELECT now(), "
+              "_storage_id, "
+              "_tenant_id, "
+              "_creator_id, "
+              "%s, "
+              "%s, "
+              "NULL, "
+              "%s, "
+              "%s, "
+              "%s "
+            "FROM executions WHERE id = %s"
+        )
+        args = (
+            message['event_type'],
+            message['message']['text'],
+            message['context']['operation'],
+            message['context']['node_id'],
+            message['context']['task_error_causes'],
+            message['context']['execution_id']
+        )
+
+        return sql, args
