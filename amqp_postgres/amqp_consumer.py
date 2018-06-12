@@ -57,11 +57,8 @@ class AMQPLogsEventsConsumer(object):
         channel.basic_consume(self.process, self.queue)
 
     def process(self, channel, method, properties, body):
-        print('Channel: {0}'.format(channel))
-        print('Method: {0}'.format(method))
-        print('Properties: {0}'.format(properties))
         try:
             parsed_body = json.loads(body)
-            self._message_processor(parsed_body)
+            self._message_processor(parsed_body, method.exchange)
         except Exception as e:
             logger.warn('Failed message processing: {0}'.format(e))
