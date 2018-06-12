@@ -60,8 +60,8 @@ class PostgreSQLPublisher(object):
         with self._connection.cursor() as cur:
             logger.error('Executing SQL statement: {0}'.format(sql))
             cur.execute(sql, args)
+            self._connection.commit()
             logger.error('Status: {0}'.format(cur.statusmessage))
-            logger.error('Res: {0}'.format(cur.fetchall()))
 
     @staticmethod
     def _get_logs_sql(message):
