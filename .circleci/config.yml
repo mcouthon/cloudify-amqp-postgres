@@ -38,7 +38,7 @@ jobs:
              id text,
              _storage_id integer,
              _tenant_id integer,
-             _creator_id integer,
+             _creator_id integer
           );"
 
       - run: |
