@@ -95,8 +95,8 @@ class PostgreSQLPublisher(object):
             message['logger'],
             message['level'],
             message['message']['text'],
-            message['context']['operation'],
-            message['context']['node_id'],
+            message['context'].get('operation'),
+            message['context'].get('node_id'),
             message['context']['execution_id']
         )
         return sql, args
@@ -134,9 +134,9 @@ class PostgreSQLPublisher(object):
             message['timestamp'],
             message['event_type'],
             message['message']['text'],
-            message['context']['operation'],
-            message['context']['node_id'],
-            message['context']['task_error_causes'],
+            message['context'].get('operation'),
+            message['context'].get('node_id'),
+            message['context'].get('task_error_causes'),
             message['context']['execution_id']
         )
 
