@@ -32,6 +32,7 @@ Pulls Cloudify logs/events from RabbitMQ and posts them in PostgreSQL.
 virtualenv %_venv
 
 %_venv/bin/pip install --upgrade pip setuptools
+%_venv/bin/pip install --upgrade -r "${RPM_SOURCE_DIR}/dev-requirements.txt"
 %_venv/bin/pip install --upgrade "${RPM_SOURCE_DIR}/"
 
 
