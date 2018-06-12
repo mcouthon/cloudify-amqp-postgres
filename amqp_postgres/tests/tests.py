@@ -112,7 +112,7 @@ class Test(unittest.TestCase):
         sql = (
             'INSERT into executions('
             'id, _storage_id, _creator_id, _tenant_id'
-            ') VALUES(%s, 0, 0, 0)'
+            ') VALUES(%s, 0, 0, 0);'
         )
         with self._postgres_connection.cursor() as cur:
             cur.execute(sql, (execution_id, ))

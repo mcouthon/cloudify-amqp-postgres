@@ -90,7 +90,7 @@ class PostgreSQLPublisher(object):
               "NULL, "
               "%s, "
               "%s "
-            "FROM executions WHERE id = %s"
+            "FROM executions WHERE id = %s;"
         )
         args = (
             message['timestamp'],
@@ -130,7 +130,7 @@ class PostgreSQLPublisher(object):
               "%s, "
               "%s, "
               "%s "
-            "FROM executions WHERE id = %s"
+            "FROM executions WHERE id = %s;"
         )
         args = (
             message['timestamp'],
