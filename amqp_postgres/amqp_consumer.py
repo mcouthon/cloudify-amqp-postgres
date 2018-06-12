@@ -46,7 +46,8 @@ class AMQPLogsEventsConsumer(object):
         for exchange in [self.LOGS_EXCHANGE, self.EVENTS_EXCHANGE]:
             channel.exchange_declare(exchange=exchange,
                                      auto_delete=False,
-                                     durable=True)
+                                     durable=True,
+                                     exchange_type='fanout')
             channel.queue_bind(queue=self.queue,
                                exchange=exchange)
 
