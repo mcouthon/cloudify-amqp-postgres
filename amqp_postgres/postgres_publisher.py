@@ -76,7 +76,9 @@ class PostgreSQLPublisher(object):
               "message_code, "
               "operation, "
               "node_id) "
-            "SELECT now(), "
+            "SELECT "
+              "now(), "
+              "%s, "
               "_storage_id, "
               "_tenant_id, "
               "_creator_id, "
@@ -89,6 +91,7 @@ class PostgreSQLPublisher(object):
             "FROM executions WHERE id = %s"
         )
         args = (
+            message['timestamp'],
             message['logger'],
             message['level'],
             message['message']['text'],
@@ -113,7 +116,9 @@ class PostgreSQLPublisher(object):
               "operation, "
               "node_id, "
               "error_causes) "
-            "SELECT now(), "
+            "SELECT "
+              "now(), "
+              "%s, "
               "_storage_id, "
               "_tenant_id, "
               "_creator_id, "
@@ -126,6 +131,7 @@ class PostgreSQLPublisher(object):
             "FROM executions WHERE id = %s"
         )
         args = (
+            message['timestamp'],
             message['event_type'],
             message['message']['text'],
             message['context']['operation'],
