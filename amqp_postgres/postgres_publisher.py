@@ -58,8 +58,10 @@ class PostgreSQLPublisher(object):
             raise StandardError('Unknown exchange type: {0}'.format(exchange))
 
         with self._connection.cursor() as cur:
-            logger.debug('Executing SQL statement: {0}'.format(sql))
+            logger.error('Executing SQL statement: {0}'.format(sql))
             cur.execute(sql, args)
+            logger.error('Status: {0}'.format(cur.statusmessage))
+            logger.error('Res: {0}'.format(cur.fetchall()))
 
     @staticmethod
     def _get_logs_sql(message):

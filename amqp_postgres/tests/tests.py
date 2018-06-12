@@ -120,16 +120,15 @@ class Test(unittest.TestCase):
     def _assert_db_state(self):
         with self._postgres_connection.cursor() as cur:
             cur.execute('SELECT * from executions;')
-            res = cur.fetchall()
-            print res, type(res), cur.statusmessage
+            print cur.fetchall(), cur.statusmessage
 
+        with self._postgres_connection.cursor() as cur:
             cur.execute('SELECT * from events;')
-            res = cur.fetchall()
-            print res, type(res), cur.statusmessage
+            print cur.fetchall(), cur.statusmessage
 
+        with self._postgres_connection.cursor() as cur:
             cur.execute('SELECT * from logs;')
-            res = cur.fetchall()
-            print res, type(res), cur.statusmessage
+            print cur.fetchall(), cur.statusmessage
 
     @staticmethod
     def now():
