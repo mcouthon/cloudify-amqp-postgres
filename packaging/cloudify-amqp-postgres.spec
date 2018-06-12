@@ -19,7 +19,7 @@ BuildRequires:  python >= 2.7, python-virtualenv
 Requires:       python >= 2.7, influxdb
 Requires(pre):  shadow-utils
 
-%define _venv /opt/amqppostgres/env
+%define _venv /opt/amqp-postgres/env
 %define _user amqppostgres
 
 
@@ -37,8 +37,8 @@ virtualenv %_venv
 
 %install
 
-mkdir -p %{buildroot}/opt/amqppostgres
-mv %_venv %{buildroot}/opt/amqppostgres
+mkdir -p %{buildroot}/opt/amqp-postgres
+mv %_venv %{buildroot}/opt/amqp-postgres
 
 # Create the log dir
 mkdir -p %{buildroot}/var/log/cloudify/amqp-postgres
@@ -52,15 +52,15 @@ cp -R ${RPM_SOURCE_DIR}/packaging/files/* %{buildroot}
 %pre
 
 groupadd -fr %_user
-getent passwd %_user >/dev/null || useradd -r -g %_user -d /opt/amqppostgres -s /sbin/nologin %_user
+getent passwd %_user >/dev/null || useradd -r -g %_user -d /opt/amqp-postgres -s /sbin/nologin %_user
 
 
 %files
 
-%dir %attr(750,%_user,%_user) /opt/amqppostgres
-/opt/amqppostgres/*
-/opt/amqppostgres_NOTICE.txt
-/usr/lib/systemd/system/cloudify-amqppostgres.service
+%dir %attr(750,%_user,%_user) /opt/amqp-postgres
+/opt/amqp-postgres/*
+/opt/amqp-postgres_NOTICE.txt
+/usr/lib/systemd/system/cloudify-amqp-postgres.service
 
 /etc/logrotate.d/cloudify-amqp-postgres
 %attr(750,%_user,adm) /var/log/cloudify/amqp-postgres
