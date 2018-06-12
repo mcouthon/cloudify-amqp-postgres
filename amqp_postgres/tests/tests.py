@@ -60,9 +60,20 @@ class Test(unittest.TestCase):
             )
         self.events_publisher = self._create_events_publisher()
         self._thread = None
+        self._postgres_connection = self._get_postgres_connection()
 
     def tearDown(self):
         self.events_publisher.close()
+        if self._postgres_connection:
+            self._postgres_connection.close()
+
+    def _get_postgres_connection(self):
+        return psycopg2.connect(
+            database=self.args.postgres_db,
+            user=self.args.postgres_user,
+            host=self.args.postgres_hostname,
+            password=self.args.postgres_password
+        )
 
     def _create_events_publisher(self):
         os.environ['AGENT_NAME'] = 'test'
@@ -93,7 +104,18 @@ class Test(unittest.TestCase):
         self._assert_db_state()
 
     def _assert_db_state(self):
-        pass
+        with self._postgres_connection.cursor() as cur:
+            cur.execute('SELECT * from executions;')
+            res = cur.fetchall()
+            print res, type(res), cur.statusmessage
+
+            cur.execute('SELECT * from events;')
+            res = cur.fetchall()
+            print res, type(res), cur.statusmessage
+
+            cur.execute('SELECT * from logs;')
+            res = cur.fetchall()
+            print res, type(res), cur.statusmessage
 
     def _publish_log(self):
         log = {
