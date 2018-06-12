@@ -32,30 +32,30 @@ jobs:
     environment:
       TOX_TEST: py27
 
-#  build-rpm:
-#    machine:
-#      enabled: true
-#
-#    steps:
-#      - checkout
-#      - run: pip install requests
-#      - run: git clone --depth 1 https://github.com/cloudify-cosmo/cloudify-manager.git ~/cloudify-manager
-#      - run: |
-#          cd ~/cloudify-manager
-#          git fetch --depth 1 origin "${CIRCLE_BRANCH}" && git checkout "${CIRCLE_BRANCH}" || echo no matching branch found, using master
-#      - run: |
-#          builder="docker run --cap-add SYS_ADMIN --security-opt apparmor:unconfined \
-#            --mount type=bind,source=$(pwd),target=/source \
-#            --mount type=bind,source=${HOME}/cloudify-manager,target=/builder \
-#            cloudify3/mock-builder:0.1 \
-#            python /builder/packaging/build_rpm.py"
-#          $builder /source/packaging/cloudify-amqp-postgres.spec
-#      - run: mkdir result
-#      - run: mv ~/cloudify-manager/packaging/*.rpm result
-#
-#      - store_artifacts:
-#          path: result
-#          destination: result
+  build-rpm:
+    machine:
+      enabled: true
+
+    steps:
+      - checkout
+      - run: pip install requests
+      - run: git clone --depth 1 https://github.com/cloudify-cosmo/cloudify-manager.git ~/cloudify-manager
+      - run: |
+          cd ~/cloudify-manager
+          git fetch --depth 1 origin "${CIRCLE_BRANCH}" && git checkout "${CIRCLE_BRANCH}" || echo no matching branch found, using master
+      - run: |
+          builder="docker run --cap-add SYS_ADMIN --security-opt apparmor:unconfined \
+            --mount type=bind,source=$(pwd),target=/source \
+            --mount type=bind,source=${HOME}/cloudify-manager,target=/builder \
+            cloudify3/mock-builder:0.1 \
+            python /builder/packaging/build_rpm.py"
+          $builder /source/packaging/cloudify-amqp-postgres.spec
+      - run: mkdir result
+      - run: mv ~/cloudify-manager/packaging/*.rpm result
+
+      - store_artifacts:
+          path: result
+          destination: result
 
 
 workflows:
@@ -65,4 +65,4 @@ workflows:
     jobs:
       - flake8
       - py27
-#      - build-rpm
+      - build-rpm
