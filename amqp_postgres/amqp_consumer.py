@@ -32,6 +32,9 @@ class AMQPLogsEventsConsumer(object):
         self._in_channel = None
         self._message_processor = message_processor
 
+        # This is here because AMQPConnection expects it
+        self.routing_key = ''
+
     def register(self, connection):
         self._connection = connection
         self._in_channel = connection.channel()
