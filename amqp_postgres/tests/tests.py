@@ -97,7 +97,7 @@ class Test(unittest.TestCase):
 
         time.sleep(5)
 
-        execution_id = uuid4()
+        execution_id = str(uuid4())
 
         self._create_execution(execution_id)
         self._publish_event(execution_id)
