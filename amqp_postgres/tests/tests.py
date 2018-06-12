@@ -15,9 +15,10 @@
 ############
 
 import os
+import time
 import unittest
 import threading
-import time
+from uuid import uuid4
 
 from collections import namedtuple
 
@@ -96,12 +97,23 @@ class Test(unittest.TestCase):
 
         time.sleep(5)
 
-        self._publish_event()
-        self._publish_log()
+        execution_id = uuid4()
+
+        self._create_execution(execution_id)
+        self._publish_event(execution_id)
+        self._publish_log(execution_id)
 
         self._thread.join(3)
 
         self._assert_db_state()
+
+    def _create_execution(self, execution_id):
+        with self._postgres_connection.cursor() as cur:
+            cur.execute(
+                'INSERT into executions('
+                'id, _storage_id, _creator_id, _tenant_id) VALUES(%s)',
+                (execution_id, 0, 0, 0)
+            )
 
     def _assert_db_state(self):
         with self._postgres_connection.cursor() as cur:
@@ -117,12 +129,12 @@ class Test(unittest.TestCase):
             res = cur.fetchall()
             print res, type(res), cur.statusmessage
 
-    def _publish_log(self):
+    def _publish_log(self, execution_id):
         log = {
             'context': {
                 'blueprint_id': 'bp',
                 'deployment_id': 'dep',
-                'execution_id': '1111',
+                'execution_id': execution_id,
                 'node_id': 'vm_7j36my',
                 'node_name': 'vm',
                 'operation': 'cloudify.interfaces.cloudify_agent.create',
@@ -142,18 +154,18 @@ class Test(unittest.TestCase):
 
         self.events_publisher.publish_message(log, message_type='log')
 
-    def _publish_event(self):
+    def _publish_event(self, execution_id):
         event = {
-            "message": {
-                "text": "Starting 'install' workflow execution",
-                "arguments": None
+            'message': {
+                'text': "Starting 'install' workflow execution",
+                'arguments': None
             },
-            "event_type": "workflow_started",
-            "context": {
-                "deployment_id": "dep",
-                "workflow_id": "create_deployment_environment",
-                "execution_id": "460f89fa-5626-41ca-9a7c-039b4a6040d7",
-                "blueprint_id": "bp"
+            'event_type': 'workflow_started',
+            'context': {
+                'deployment_id': 'dep',
+                'workflow_id': 'install',
+                'execution_id': execution_id,
+                'blueprint_id': 'bp'
             }
         }
 
