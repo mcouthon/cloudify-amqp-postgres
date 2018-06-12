@@ -13,99 +13,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ############
-import ssl
-import json
-import time
-import logging
 
-import pika
-from pika.exceptions import AMQPConnectionError
+import json
+import logging
+from uuid import uuid4
 
 logging.basicConfig()
 logger = logging.getLogger('amqp_postgres')
 
-D_CONN_ATTEMPTS = 12
-D_RETRY_DELAY = 5
 
+class AMQPLogsEventsConsumer(object):
+    LOGS_EXCHANGE = 'cloudify-logs'
+    EVENTS_EXCHANGE = 'cloudify-events'
 
-class AMQPTopicConsumer(object):
+    def __init__(self, message_processor):
+        self.queue = uuid4()
+        self._connection = None
+        self._in_channel = None
+        self._message_processor = message_processor
 
-    def __init__(self,
-                 exchange,
-                 routing_key,
-                 message_processor,
-                 connection_parameters=None):
-        """
-            AMQPTopicConsumer initialisation expects a connection_parameters
-            dict as provided by the __main__ of amqp_influx.
-        """
-        if connection_parameters is None:
-            connection_parameters = {}
+    def register(self, connection):
+        self._connection = connection
+        self._in_channel = connection.channel()
+        self._register_queue(self._in_channel)
 
-        self.message_processor = message_processor
+    def _register_queue(self, channel):
+        channel.confirm_delivery()
+        channel.queue_declare(queue=self.queue,
+                              durable=True,
+                              auto_delete=False)
 
-        credentials = connection_parameters.get('credentials', {})
-        credentials_object = pika.credentials.PlainCredentials(
-            # These may be passed as None, so handle the default outside of
-            # the get
-            username=credentials.get('username') or 'guest',
-            password=credentials.get('password') or 'guest',
-        )
-        connection_parameters['credentials'] = credentials_object
+        for exchange in [self.LOGS_EXCHANGE, self.EVENTS_EXCHANGE]:
+            channel.exchange_declare(exchange=exchange,
+                                     auto_delete=False,
+                                     durable=True)
+            channel.queue_bind(queue=self.queue,
+                               exchange=exchange)
 
-        if connection_parameters.get('ssl', False):
-            connection_parameters['ssl_options'] = {
-                'cert_reqs': ssl.CERT_REQUIRED,
-                # Currently, not having a ca path with SSL enabled is
-                # effectively an error, so we will let it fail
-                'ca_certs': connection_parameters['ca_path'],
-            }
+        channel.basic_consume(self.process, self.queue)
 
-        if 'ca_path' in connection_parameters.keys():
-            # We don't need this any more
-            connection_parameters.pop('ca_path')
-
-        # add retry with try/catch because Pika currently ignoring these
-        # connection parameters when using BlockingConnection:
-        # https://github.com/pika/pika/issues/354
-        attempts = connection_parameters.get('connection_attempts',
-                                             D_CONN_ATTEMPTS)
-        timeout = connection_parameters.get('retry_delay', D_RETRY_DELAY)
-        for _ in range(attempts):
-            try:
-                self.connection = pika.BlockingConnection(
-                    pika.ConnectionParameters(**connection_parameters))
-            except AMQPConnectionError:
-                time.sleep(timeout)
-            else:
-                break
-        else:
-            raise AMQPConnectionError
-
-        self.channel = self.connection.channel()
-        self.channel.exchange_declare(exchange=exchange,
-                                      type='topic',
-                                      durable=False,
-                                      auto_delete=True,
-                                      internal=False)
-        result = self.channel.queue_declare(
-            auto_delete=True,
-            durable=False,
-            exclusive=False)
-        queue = result.method.queue
-        self.channel.queue_bind(exchange=exchange,
-                                queue=queue,
-                                routing_key=routing_key)
-        self.channel.basic_consume(self._process,
-                                   queue,
-                                   no_ack=True)
-
-    def consume(self):
-        self.channel.start_consuming()
-
-    def _process(self, channel, method, properties, body):
+    def process(self, channel, method, properties, body):
         try:
             parsed_body = json.loads(body)
-            self.message_processor(parsed_body)
+            self._message_processor(parsed_body)
         except Exception as e:
             logger.warn('Failed message processing: {0}'.format(e))

@@ -16,7 +16,9 @@
 
 import argparse
 
-from .amqp_consumer import AMQPTopicConsumer
+from cloudify.amqp_client import get_client
+
+from .amqp_consumer import AMQPLogsEventsConsumer
 from .postgres_publisher import PostgreSQLPublisher
 
 BROKER_PORT_SSL = 5671
@@ -47,7 +49,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    publisher = PostgreSQLPublisher(
+    postgres_publisher = PostgreSQLPublisher(
         host=args.postgres_hostname,
         db=args.postgres_db,
         user=args.postgres_user,
@@ -62,24 +64,24 @@ def main():
         ssl_enabled = False
         amqp_port = BROKER_PORT_NO_SSL
 
-    conn_params = {
-        'host': args.amqp_hostname,
-        'port': amqp_port,
-        'connection_attempts': 12,
-        'retry_delay': 5,
-        'credentials': {
-            'username': args.amqp_username,
-            'password': args.amqp_password,
-        },
-        'ca_path': args.amqp_ca_cert_path,
-        'ssl': ssl_enabled,
-    }
-    consumer = AMQPTopicConsumer(
-        exchange=args.amqp_exchange,
-        routing_key=args.amqp_routing_key,
-        message_processor=publisher.process,
-        connection_parameters=conn_params)
-    consumer.consume()
+    amqp_client = get_client(
+        amqp_host=args.amqp_hostname,
+        amqp_user=args.amqp_username,
+        amqp_pass=args.amqp_password,
+        amqp_vhost='/',
+        amqp_port=amqp_port,
+        ssl_enabled=ssl_enabled,
+        ssl_cert_path=args.amqp_ca_cert_path
+    )
+
+    amqp_consumer = AMQPLogsEventsConsumer(
+        message_processor=postgres_publisher.process
+    )
+
+    amqp_client.add_handler(amqp_consumer)
+
+    with postgres_publisher:
+        amqp_client.consume()
 
 
 if __name__ == '__main__':

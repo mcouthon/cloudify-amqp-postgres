@@ -31,5 +31,6 @@ setup(
     install_requires=[
         'pika==0.9.14',
         'psycopg2-binary==2.7.4',
+        'cloudify-common==4.4.dev1',
     ],
 )
