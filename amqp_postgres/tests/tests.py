@@ -53,7 +53,7 @@ class Test(unittest.TestCase):
                 amqp_ssl_enabled='false',
                 amqp_ca_cert_path='',
                 postgres_hostname='localhost',
-                postgres_db='cloudify',
+                postgres_db='cloudify_db',
                 postgres_user='cloudify',
                 postgres_password='cloudify'
 
