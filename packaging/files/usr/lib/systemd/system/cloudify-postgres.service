@@ -1,0 +1,26 @@
+[Unit]
+Description=Cloudify AMQP PostgreSQL Broker Service
+Wants=postgresql-9.5.service cloudify-rabbitmq.service
+After=postgresql-9.5.service cloudify-rabbitmq.service
+
+[Service]
+TimeoutStartSec=0
+Restart=on-failure
+EnvironmentFile=/etc/sysconfig/cloudify-amqppostgres
+User=amqppostgres
+Group=amqppostgres
+ExecStart=/opt/amqppostgres/env/bin/python /opt/amqppostgres/env/bin/cloudify-amqp-postgres \
+    --amqp-exchange cloudify-monitoring \
+    --amqp-routing-key '*' \
+    --amqp-hostname ${AMQP_HOST} \
+    --amqp-username "${AMQP_USERNAME}" \
+    --amqp-password "${AMQP_PASSWORD}" \
+    --amqp-ssl-enabled "True" \
+    --amqp-ca-cert-path "${AMQP_CA_CERT_PATH}" \
+    --postgres-host ${POSTGRES_HOST} \
+    --postgres-db ${POSTGRES_DB} \
+    --postgres-user ${POSTGRES_USER} \
+    --postgres-password ${POSTGRES_PASSWORD}
+
+[Install]
+WantedBy=multi-user.target

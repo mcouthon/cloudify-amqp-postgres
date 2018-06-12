@@ -1,0 +1,102 @@
+########
+# Copyright (c) 2014 GigaSpaces Technologies Ltd. All rights reserved
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+############
+
+import unittest
+import threading
+import json
+import uuid
+import time
+
+import pika
+
+from amqp_postgres.amqp_consumer import AMQPTopicConsumer
+from amqp_postgres.postgres_publisher import PostgreSQLPublisher
+
+
+amqp_exchange = 'exchange'
+routing_key = 'routing_key'
+
+
+class Test(unittest.TestCase):
+
+    def test(self):
+
+        def start():
+            publisher = PostgreSQLPublisher(
+                db='cloudify_db',
+                user='cloudify',
+                password='cloudify',
+                host='localhost'
+            )
+
+            # Default conn parameters from __main__, with username and
+            # password specified
+            conn_parameters = {
+                'host': 'localhost',
+                'port': 5672,
+                'connection_attempts': 12,
+                'retry_delay': 5,
+                'credentials': {
+                    'username': 'guest',
+                    'password': 'guest',
+                },
+                'ssl': False,
+                'ca_path': '',
+            }
+
+            consumer = AMQPTopicConsumer(
+                exchange=amqp_exchange,
+                routing_key=routing_key,
+                message_processor=publisher.process,
+                connection_parameters=conn_parameters)
+            consumer.consume()
+
+        thread = threading.Thread(target=start)
+        thread.daemon = True
+
+        thread.start()
+        time.sleep(5)
+        event_id = str(uuid.uuid4())
+        publish_event(event_id)
+        thread.join(3)
+
+
+def publish_event(unique_id):
+
+    event = {
+        'node_id': 'node_id',
+        'node_name': 'node_name',
+        'deployment_id': unique_id,
+        'name': 'name',
+        'path': 'path',
+        'metric': 100,
+        'unit': '',
+        'type': 'type',
+    }
+
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters(host='localhost'))
+    channel = connection.channel()
+    channel.exchange_declare(exchange=amqp_exchange,
+                             type='topic',
+                             durable=False,
+                             auto_delete=True,
+                             internal=False)
+    channel.basic_publish(exchange=amqp_exchange,
+                          routing_key=routing_key,
+                          body=json.dumps(event))
+    channel.close()
+    connection.close()
