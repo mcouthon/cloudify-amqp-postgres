@@ -55,9 +55,5 @@ class PostgreSQLPublisher(object):
         self._cursor = self._connection.cursor()
 
     def process(self, message):
-        print('#' * 80)
         logger.error('#' * 80)
-        print(message)
         logger.error(message)
-
-        raise StandardError('here')

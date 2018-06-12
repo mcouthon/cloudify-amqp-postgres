@@ -14,89 +14,124 @@
 # limitations under the License.
 ############
 
+import os
 import unittest
 import threading
-import json
-import uuid
 import time
 
-import pika
+from collections import namedtuple
 
-from amqp_postgres.amqp_consumer import AMQPTopicConsumer
-from amqp_postgres.postgres_publisher import PostgreSQLPublisher
+import psycopg2
+
+from cloudify.amqp_client import create_events_publisher
+
+from amqp_postgres.__main__ import main
 
 
-amqp_exchange = 'exchange'
-routing_key = 'routing_key'
+Args = namedtuple(
+    'Args',
+    'amqp_hostname '
+    'amqp_username '
+    'amqp_password '
+    'amqp_ssl_enabled '
+    'amqp_ca_cert_path '
+    'postgres_hostname '
+    'postgres_db '
+    'postgres_user '
+    'postgres_password '
+)
 
 
 class Test(unittest.TestCase):
 
-    def test(self):
+    def setUp(self):
+        self.args = Args(
+                amqp_hostname='localhost',
+                amqp_username='guest',
+                amqp_password='guest',
+                amqp_ssl_enabled=False,
+                amqp_ca_cert_path='',
+                postgres_hostname='localhost',
+                postgres_db='cloudify',
+                postgres_user='cloudify',
+                postgres_password='cloudify'
 
-        def start():
-            publisher = PostgreSQLPublisher(
-                db='cloudify_db',
-                user='cloudify',
-                password='cloudify',
-                host='localhost'
             )
+        self.events_publisher = self._create_events_publisher()
+        self._thread = None
 
-            # Default conn parameters from __main__, with username and
-            # password specified
-            conn_parameters = {
-                'host': 'localhost',
-                'port': 5672,
-                'connection_attempts': 12,
-                'retry_delay': 5,
-                'credentials': {
-                    'username': 'guest',
-                    'password': 'guest',
-                },
-                'ssl': False,
-                'ca_path': '',
-            }
+    def tearDown(self):
+        self.events_publisher.close()
 
-            consumer = AMQPTopicConsumer(
-                exchange=amqp_exchange,
-                routing_key=routing_key,
-                message_processor=publisher.process,
-                connection_parameters=conn_parameters)
-            consumer.consume()
+    def _create_events_publisher(self):
+        os.environ['AGENT_NAME'] = 'test'
+        return create_events_publisher(
+            amqp_host=self.args.amqp_hostname,
+            amqp_user=self.args.amqp_username,
+            amqp_pass=self.args.amqp_password,
+            amqp_vhost='/',
+            ssl_enabled=False,
+            ssl_cert_path=''
+        )
 
-        thread = threading.Thread(target=start)
-        thread.daemon = True
+    def _run_amqp_postgres(self):
+        self._thread = threading.Thread(target=main, args=(self.args,))
+        self._thread.daemon = True
+        self._thread.start()
 
-        thread.start()
+    def test(self):
+        self._run_amqp_postgres()
+
         time.sleep(5)
-        event_id = str(uuid.uuid4())
-        publish_event(event_id)
-        thread.join(3)
 
+        self._publish_event()
+        self._publish_log()
 
-def publish_event(unique_id):
+        self._thread.join(3)
 
-    event = {
-        'node_id': 'node_id',
-        'node_name': 'node_name',
-        'deployment_id': unique_id,
-        'name': 'name',
-        'path': 'path',
-        'metric': 100,
-        'unit': '',
-        'type': 'type',
-    }
+        self._assert_db_state()
 
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host='localhost'))
-    channel = connection.channel()
-    channel.exchange_declare(exchange=amqp_exchange,
-                             type='topic',
-                             durable=False,
-                             auto_delete=True,
-                             internal=False)
-    channel.basic_publish(exchange=amqp_exchange,
-                          routing_key=routing_key,
-                          body=json.dumps(event))
-    channel.close()
-    connection.close()
+    def _assert_db_state(self):
+        pass
+
+    def _publish_log(self):
+        log = {
+            'context': {
+                'blueprint_id': 'bp',
+                'deployment_id': 'dep',
+                'execution_id': '1111',
+                'node_id': 'vm_7j36my',
+                'node_name': 'vm',
+                'operation': 'cloudify.interfaces.cloudify_agent.create',
+                'plugin': 'agent',
+                'task_id': 'a13973d5-3866-4054-baa1-479e242fff75',
+                'task_name': 'cloudify_agent.installer.operations.create',
+                'task_queue': 'cloudify.management',
+                'task_target': 'cloudify.management',
+                'workflow_id': 'install'
+            },
+            'level': 'debug',
+            'logger': 'ctx.a13973d5-3866-4054-baa1-479e242fff75',
+            'message': {
+                'text': 'Test log'
+            }
+        }
+
+        self.events_publisher.publish_message(log, message_type='log')
+
+    def _publish_event(self):
+        event = {
+            "message": {
+                "text": "Starting 'create_deployment_environment' workflow execution",
+                "arguments": None
+            },
+            "event_type": "workflow_started",
+            "context": {
+                "deployment_id": "dep",
+                "workflow_id": "create_deployment_environment",
+                "execution_id": "460f89fa-5626-41ca-9a7c-039b4a6040d7",
+                "blueprint_id": "bp"
+            }
+        }
+
+        self.events_publisher.publish_message(event, message_type='event')
