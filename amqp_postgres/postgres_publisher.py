@@ -49,7 +49,80 @@ class PostgreSQLPublisher(object):
             password=self._password
         )
 
-    def process(self, message):
+    def process(self, message, exchange):
+        if exchange == 'cloudify-events':
+            sql = self._get_events_sql(message)
+        elif exchange == 'cloudify-logs':
+            sql = self._get_logs_sql(message)
+        else:
+            raise StandardError('Unknown exchange type: {0}'.format(exchange))
+
         with self._connection.cursor() as cur:
-            logger.error('#' * 80)
-            logger.error(message)
+            logger.debug('Executing SQL statement: {0}'.format(sql))
+            cur.execute(sql)
+
+    @staticmethod
+    def _get_logs_sql(message):
+        return "INSERT INTO logs (" \
+                 "timestamp, " \
+                 "reported_timestamp, " \
+                 "_execution_fk, " \
+                 "_tenant_id, " \
+                 " _creator_id, " \
+                 "logger, " \
+                 "level, " \
+                 "message, " \
+                 "message_code, " \
+                 "operation, " \
+                 "node_id) " \
+               "SELECT now(), " \
+                 "_storage_id, " \
+                 "_tenant_id, " \
+                 "_creator_id, " \
+                 "{logger}, " \
+                 "{level}, " \
+                 "{message}, " \
+                 "NULL, " \
+                 "{operation}, " \
+                 "{node_id} " \
+               "FROM executions WHERE id = {execution_id}".format(
+                    logger=message['logger'],
+                    level=message['level'],
+                    message=message['message']['text'],
+                    operation=message['context']['operation'],
+                    node_id=message['context']['node_id'],
+                    execution_id=message['context']['execution_id']
+                )
+
+    @staticmethod
+    def _get_events_sql(message):
+        return "INSERT INTO events (" \
+                 "timestamp, " \
+                 "reported_timestamp, " \
+                 "_execution_fk, " \
+                 "_tenant_id, " \
+                 "_creator_id, " \
+                 "event_type, " \
+                 "message, " \
+                 "message_code, " \
+                 "operation, " \
+                 "node_id, " \
+                 "error_causes) " \
+               "SELECT now(), " \
+                 "_storage_id, " \
+                 "_tenant_id, " \
+                 "_creator_id, " \
+                 "{event_type}, " \
+                 "{message}, " \
+                 "NULL, " \
+                 "{operation}, " \
+                 "{node_id}, " \
+                 "{error_causes}, " \
+                 "FROM executions WHERE id = {execution_id}".format(
+                    event_type=message['event_type'],
+                    message=message['message']['text'],
+                    operation=message['context']['operation'],
+                    node_id=message['context']['node_id'],
+                    error_causes=message['context']['task_error_causes'],
+                    execution_id=message['context']['execution_id']
+                 )
