@@ -160,7 +160,7 @@ class Test(unittest.TestCase):
         self.assertEqual(db_log[5], log['level'])  # level
         self.assertEqual(db_log[6], log['context']['operation'])  # operation
         self.assertEqual(db_log[7], log['context']['node_id'])  # node_id
-        self.assertEqual(db_log[8], log['context']['execution_id'])  # exec_id
+        self.assertEqual(db_log[8], 0)  # execution_fk
         self.assertEqual(db_log[9], 0)  # creator_id
         self.assertEqual(db_log[10], 0)  # tenant_id
         self.assertEqual(db_log[11], log['timestamp'])  # reported_timestamp
@@ -178,7 +178,7 @@ class Test(unittest.TestCase):
         self.assertEqual(db_event[5], None)  # error_causes
         self.assertEqual(db_event[6], None)  # operation
         self.assertEqual(db_event[7], None)  # node_id
-        self.assertEqual(db_event[8], event['context']['execution_id'])
+        self.assertEqual(db_event[8], 0)  # execution_fk
         self.assertEqual(db_event[9], 0)  # creator_id
         self.assertEqual(db_event[10], 0)  # tenant_id
         self.assertEqual(db_event[11], event['timestamp'])  # reported_ts
