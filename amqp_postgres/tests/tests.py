@@ -116,7 +116,7 @@ class Test(unittest.TestCase):
         )
         with self._postgres_connection.cursor() as cur:
             cur.execute(sql, (execution_id, ))
-            self._postgres_connection.commit()
+        self._postgres_connection.commit()
 
     def _assert_db_state(self):
         with self._postgres_connection.cursor() as cur:
