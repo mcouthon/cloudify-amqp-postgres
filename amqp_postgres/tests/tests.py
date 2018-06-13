@@ -128,7 +128,7 @@ class Test(unittest.TestCase):
 
     def _get_db_element(self, table_name):
         with self._postgres_connection.cursor() as cur:
-            cur.execute('SELECT * from %s;', (table_name, ))
+            cur.execute('SELECT * from {0};'.format(table_name))
 
             # Expecting only a single event in the table
             self.assertEqual(cur.rowcount, 1)
