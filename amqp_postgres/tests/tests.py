@@ -156,8 +156,8 @@ class Test(unittest.TestCase):
         self.assertEqual(type(db_log[1]), datetime)  # timestamp
         self.assertEqual(db_log[2], log['message']['text'])  # message
         self.assertEqual(db_log[3], None)  # message code
-        self.assertEqual(db_log[4], log['context']['logger'])  # logger
-        self.assertEqual(db_log[5], log['context']['level'])  # level
+        self.assertEqual(db_log[4], log['logger'])  # logger
+        self.assertEqual(db_log[5], log['level'])  # level
         self.assertEqual(db_log[6], log['context']['operation'])  # operation
         self.assertEqual(db_log[7], log['context']['node_id'])  # node_id
         self.assertEqual(db_log[8], log['context']['execution_id'])  # exec_id
