@@ -110,8 +110,8 @@ class Test(unittest.TestCase):
 
         self._thread.join(3)
 
-        db_log = self._get_db_element('logs')
-        db_event = self._get_db_element('events')
+        db_log = self._get_db_log()
+        db_event = self._get_db_event()
 
         self._assert_log(log, db_log)
         self._assert_event(event, db_event)
@@ -126,26 +126,64 @@ class Test(unittest.TestCase):
             cur.execute(sql, (execution_id, ))
         self._postgres_connection.commit()
 
-    def _get_db_element(self, table_name):
+    def _get_db_element(self, sql):
         with self._postgres_connection.cursor() as cur:
-            cur.execute('SELECT * from {0};'.format(table_name))
+            cur.execute(sql)
 
             # Expecting only a single event in the table
             self.assertEqual(cur.rowcount, 1)
 
             return cur.fetchone()
 
+    def _get_db_log(self):
+        sql = 'SELECT id, timestamp, message, message_code, ' \
+              'logger, level, operation, node_id, _execution_fk, ' \
+              '_creator_id, _tenant_id, reported_timestamp, ' \
+              'private_resource, visibility FROM logs;'
+        return self._get_db_element(sql)
+
+    def _get_db_event(self):
+        sql = 'SELECT id, timestamp, message, message_code, ' \
+              'event_type, error_causes, operation, node_id, _execution_fk, ' \
+              '_creator_id, _tenant_id, reported_timestamp, ' \
+              'private_resource, visibility FROM events;'
+        return self._get_db_element(sql)
+
     def _assert_log(self, log, db_log):
-        print '#' * 80
-        print db_log
-        print dir(db_log)
-        print '#' * 80
+        self.assertEqual(len(db_log), 14)
+
+        self.assertEqual(db_log[0], None)  # id
+        self.assertEqual(type(db_log[1]), datetime)  # timestamp
+        self.assertEqual(db_log[2], log['message']['text'])  # message
+        self.assertEqual(db_log[3], None)  # message code
+        self.assertEqual(db_log[4], log['context']['logger'])  # logger
+        self.assertEqual(db_log[5], log['context']['level'])  # level
+        self.assertEqual(db_log[6], log['context']['operation'])  # operation
+        self.assertEqual(db_log[7], log['context']['node_id'])  # node_id
+        self.assertEqual(db_log[8], log['context']['execution_id'])  # exec_id
+        self.assertEqual(db_log[9], 0)  # creator_id
+        self.assertEqual(db_log[10], 0)  # tenant_id
+        self.assertEqual(db_log[11], log['timestamp'])  # reported_timestamp
+        self.assertEqual(db_log[12], None)  # private_resource
+        self.assertEqual(db_log[13], None)  # visibility
 
     def _assert_event(self, event, db_event):
-        print '*' * 80
-        print db_event
-        print dir(db_event)
-        print '*' * 80
+        self.assertEqual(len(db_event), 14)
+
+        self.assertEqual(db_event[0], None)  # id
+        self.assertEqual(type(db_event[1]), datetime)  # timestamp
+        self.assertEqual(db_event[2], event['message']['text'])  # message
+        self.assertEqual(db_event[3], None)  # message code
+        self.assertEqual(db_event[4], event['event_type'])  # event_type
+        self.assertEqual(db_event[5], None)  # error_causes
+        self.assertEqual(db_event[6], None)  # operation
+        self.assertEqual(db_event[7], None)  # node_id
+        self.assertEqual(db_event[8], event['context']['execution_id'])
+        self.assertEqual(db_event[9], 0)  # creator_id
+        self.assertEqual(db_event[10], 0)  # tenant_id
+        self.assertEqual(db_event[11], event['timestamp'])  # reported_ts
+        self.assertEqual(db_event[12], None)  # private_resource
+        self.assertEqual(db_event[13], None)  # visibility
 
     @staticmethod
     def now():
