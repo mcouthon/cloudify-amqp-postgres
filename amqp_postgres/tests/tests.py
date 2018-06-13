@@ -152,6 +152,8 @@ class Test(unittest.TestCase):
     def _assert_log(self, log, db_log):
         self.assertEqual(len(db_log), 14)
 
+        timestamp = '{0}Z'.format(log['timestamp'].isoformat()[:-3])
+
         self.assertEqual(db_log[0], None)  # id
         self.assertEqual(type(db_log[1]), datetime)  # timestamp
         self.assertEqual(db_log[2], log['message']['text'])  # message
@@ -163,12 +165,14 @@ class Test(unittest.TestCase):
         self.assertEqual(db_log[8], 0)  # execution_fk
         self.assertEqual(db_log[9], 0)  # creator_id
         self.assertEqual(db_log[10], 0)  # tenant_id
-        self.assertEqual(db_log[11], log['timestamp'])  # reported_timestamp
+        self.assertEqual(db_log[11], timestamp)  # reported_timestamp
         self.assertEqual(db_log[12], None)  # private_resource
         self.assertEqual(db_log[13], None)  # visibility
 
     def _assert_event(self, event, db_event):
         self.assertEqual(len(db_event), 14)
+
+        timestamp = '{0}Z'.format(event['timestamp'].isoformat()[:-3])
 
         self.assertEqual(db_event[0], None)  # id
         self.assertEqual(type(db_event[1]), datetime)  # timestamp
@@ -181,7 +185,7 @@ class Test(unittest.TestCase):
         self.assertEqual(db_event[8], 0)  # execution_fk
         self.assertEqual(db_event[9], 0)  # creator_id
         self.assertEqual(db_event[10], 0)  # tenant_id
-        self.assertEqual(db_event[11], event['timestamp'])  # reported_ts
+        self.assertEqual(db_event[11], timestamp)  # reported_timestamp
         self.assertEqual(db_event[12], None)  # private_resource
         self.assertEqual(db_event[13], None)  # visibility
 
