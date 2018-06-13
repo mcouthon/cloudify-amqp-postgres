@@ -101,12 +101,20 @@ class Test(unittest.TestCase):
         execution_id = str(uuid4())
 
         self._create_execution(execution_id)
-        self._publish_event(execution_id)
-        self._publish_log(execution_id)
+
+        log = self._get_log(execution_id)
+        event = self._get_event(execution_id)
+
+        self.events_publisher.publish_message(log, message_type='log')
+        self.events_publisher.publish_message(event, message_type='event')
 
         self._thread.join(3)
 
-        self._assert_db_state()
+        db_log = self._get_db_element('logs')
+        db_event = self._get_db_element('events')
+
+        self._assert_log(log, db_log)
+        self._assert_event(event, db_event)
 
     def _create_execution(self, execution_id):
         sql = (
@@ -118,25 +126,33 @@ class Test(unittest.TestCase):
             cur.execute(sql, (execution_id, ))
         self._postgres_connection.commit()
 
-    def _assert_db_state(self):
+    def _get_db_element(self, table_name):
         with self._postgres_connection.cursor() as cur:
-            cur.execute('SELECT * from executions;')
-            print cur.fetchall(), cur.statusmessage
+            cur.execute('SELECT * from %s;', (table_name, ))
 
-        with self._postgres_connection.cursor() as cur:
-            cur.execute('SELECT * from events;')
-            print cur.fetchall(), cur.statusmessage
+            # Expecting only a single event in the table
+            self.assertEqual(cur.rowcount, 1)
 
-        with self._postgres_connection.cursor() as cur:
-            cur.execute('SELECT * from logs;')
-            print cur.fetchall(), cur.statusmessage
+            return cur.fetchone()
+
+    def _assert_log(self, log, db_log):
+        print '#' * 80
+        print db_log
+        print dir(db_log)
+        print '#' * 80
+
+    def _assert_event(self, event, db_event):
+        print '*' * 80
+        print db_event
+        print dir(db_event)
+        print '*' * 80
 
     @staticmethod
     def now():
         return '{0}Z'.format(datetime.utcnow().isoformat()[:-3])
 
-    def _publish_log(self, execution_id):
-        log = {
+    def _get_log(self, execution_id):
+        return {
             'context': {
                 'blueprint_id': 'bp',
                 'deployment_id': 'dep',
@@ -159,10 +175,8 @@ class Test(unittest.TestCase):
             'timestamp': self.now()
         }
 
-        self.events_publisher.publish_message(log, message_type='log')
-
-    def _publish_event(self, execution_id):
-        event = {
+    def _get_event(self, execution_id):
+        return {
             'message': {
                 'text': "Starting 'install' workflow execution",
                 'arguments': None
@@ -176,5 +190,3 @@ class Test(unittest.TestCase):
             },
             'timestamp': self.now()
         }
-
-        self.events_publisher.publish_message(event, message_type='event')
