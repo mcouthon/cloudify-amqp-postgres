@@ -10,8 +10,6 @@ EnvironmentFile=/etc/sysconfig/cloudify-amqp-postgres
 User=amqppostgres
 Group=amqppostgres
 ExecStart=/opt/amqp-postgres/env/bin/python /opt/amqppostgres/env/bin/cloudify-amqp-postgres \
-    --amqp-exchange cloudify-monitoring \
-    --amqp-routing-key '*' \
     --amqp-hostname ${AMQP_HOST} \
     --amqp-username "${AMQP_USERNAME}" \
     --amqp-password "${AMQP_PASSWORD}" \
