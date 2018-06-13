@@ -19,7 +19,7 @@ import logging
 import psycopg2
 
 logging.basicConfig()
-logger = logging.getLogger('amqp_postgres')
+logger = logging.getLogger('amqp_postgres.publisher')
 
 
 class PostgreSQLPublisher(object):
@@ -29,7 +29,6 @@ class PostgreSQLPublisher(object):
         self._user = user
         self._password = password
         self._connection = None
-        self._cursor = None
 
     def __enter__(self):
         self._connect()
@@ -39,9 +38,6 @@ class PostgreSQLPublisher(object):
         self._close()
 
     def _close(self):
-        if self._cursor is not None:
-            self._cursor.close()
-
         if self._connection is not None:
             self._connection.close()
 
@@ -52,8 +48,98 @@ class PostgreSQLPublisher(object):
             host=self._host,
             password=self._password
         )
-        self._cursor = self._connection.cursor()
 
-    def process(self, message):
-        logger.error('#' * 80)
-        logger.error(message)
+    def process(self, message, exchange):
+        if exchange == 'cloudify-events':
+            sql, args = self._get_events_sql(message)
+        elif exchange == 'cloudify-logs':
+            sql, args = self._get_logs_sql(message)
+        else:
+            raise StandardError('Unknown exchange type: {0}'.format(exchange))
+
+        with self._connection.cursor() as cur:
+            logger.error('Executing SQL statement: {0}'.format(sql))
+            cur.execute(sql, args)
+            logger.error('Status: {0}'.format(cur.statusmessage))
+        self._connection.commit()
+
+    @staticmethod
+    def _get_logs_sql(message):
+        sql = (
+            "INSERT INTO logs ("
+              "timestamp, "
+              "reported_timestamp, "
+              "_execution_fk, "
+              "_tenant_id, "
+              " _creator_id, "
+              "logger, "
+              "level, "
+              "message, "
+              "message_code, "
+              "operation, "
+              "node_id) "
+            "SELECT "
+              "now(), "
+              "%s, "
+              "_storage_id, "
+              "_tenant_id, "
+              "_creator_id, "
+              "%s, "
+              "%s, "
+              "%s, "
+              "NULL, "
+              "%s, "
+              "%s "
+            "FROM executions WHERE id = %s;"
+        )
+        args = (
+            message['timestamp'],
+            message['logger'],
+            message['level'],
+            message['message']['text'],
+            message['context'].get('operation'),
+            message['context'].get('node_id'),
+            message['context']['execution_id']
+        )
+        return sql, args
+
+    @staticmethod
+    def _get_events_sql(message):
+        sql = (
+            "INSERT INTO events ("
+              "timestamp, "
+              "reported_timestamp, "
+              "_execution_fk, "
+              "_tenant_id, "
+              "_creator_id, "
+              "event_type, "
+              "message, "
+              "message_code, "
+              "operation, "
+              "node_id, "
+              "error_causes) "
+            "SELECT "
+              "now(), "
+              "%s, "
+              "_storage_id, "
+              "_tenant_id, "
+              "_creator_id, "
+              "%s, "
+              "%s, "
+              "NULL, "
+              "%s, "
+              "%s, "
+              "%s "
+            "FROM executions WHERE id = %s;"
+        )
+        args = (
+            message['timestamp'],
+            message['event_type'],
+            message['message']['text'],
+            message['context'].get('operation'),
+            message['context'].get('node_id'),
+            message['context'].get('task_error_causes'),
+            message['context']['execution_id']
+        )
+
+        return sql, args

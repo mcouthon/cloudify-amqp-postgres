@@ -6,12 +6,10 @@ After=postgresql-9.5.service cloudify-rabbitmq.service
 [Service]
 TimeoutStartSec=0
 Restart=on-failure
-EnvironmentFile=/etc/sysconfig/cloudify-amqppostgres
+EnvironmentFile=/etc/sysconfig/cloudify-amqp-postgres
 User=amqppostgres
 Group=amqppostgres
-ExecStart=/opt/amqppostgres/env/bin/python /opt/amqppostgres/env/bin/cloudify-amqp-postgres \
-    --amqp-exchange cloudify-monitoring \
-    --amqp-routing-key '*' \
+ExecStart=/opt/amqp-postgres/env/bin/python /opt/amqppostgres/env/bin/cloudify-amqp-postgres \
     --amqp-hostname ${AMQP_HOST} \
     --amqp-username "${AMQP_USERNAME}" \
     --amqp-password "${AMQP_PASSWORD}" \
